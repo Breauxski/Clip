@@ -1,6 +1,6 @@
 name: Compile Clip iOS App
 on:
-  workflow_dispatch: 
+  workflow_dispatch:
 
 jobs:
   build:
@@ -9,22 +9,34 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          submodules: 'recursive' 
+          submodules: 'recursive'
 
-      - name: Set up Xcode Version
-        run: sudo xcode-select -s /Applications/Xcode.app
-
-      - name: Build Unsigned IPA
+      - name: Find and Build Project
         run: |
           mkdir -p build
+          
+          # Force lower-case check or alternative project formats if workspace is missing
+          if [ -d "Clip.xcworkspace" ]; then
+            TARGET_FLAGS="-workspace Clip.xcworkspace -scheme Clip"
+          elif [ -d "clip.xcworkspace" ]; then
+            TARGET_FLAGS="-workspace clip.xcworkspace -scheme Clip"
+          elif [ -d "Clip.xcodeproj" ]; then
+            TARGET_FLAGS="-project Clip.xcodeproj -scheme Clip"
+          else
+            TARGET_FLAGS="-project clip.xcodeproj -scheme Clip"
+          fi
+          
+          echo "Building using flags: $TARGET_FLAGS"
+          
           xcodebuild archive \
-            -workspace Clip.xcworkspace \
-            -scheme Clip \
+            $TARGET_FLAGS \
             -configuration Release \
             -archivePath build/Clip.xcarchive \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO
 
+      - name: Package Into Sideloadable IPA
+        run: |
           mkdir -p Payload
           cp -r build/Clip.xcarchive/Products/Applications/Clip.app Payload/
           zip -r Clip_Unsigned.ipa Payload
