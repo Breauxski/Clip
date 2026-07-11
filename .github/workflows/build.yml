@@ -11,38 +11,30 @@ jobs:
         with:
           submodules: 'recursive'
 
-      - name: Find and Build Project
+      - name: Build Core Target Only
         run: |
           mkdir -p build
           
-          # Force lower-case check or alternative project formats if workspace is missing
-          if [ -d "Clip.xcworkspace" ]; then
-            TARGET_FLAGS="-workspace Clip.xcworkspace -scheme Clip"
-          elif [ -d "clip.xcworkspace" ]; then
-            TARGET_FLAGS="-workspace clip.xcworkspace -scheme Clip"
-          elif [ -d "Clip.xcodeproj" ]; then
-            TARGET_FLAGS="-project Clip.xcodeproj -scheme Clip"
-          else
-            TARGET_FLAGS="-project clip.xcodeproj -scheme Clip"
-          fi
-          
-          echo "Building using flags: $TARGET_FLAGS"
-          
+          # Compiles ONLY the primary executable block, ignoring extensions
           xcodebuild archive \
-            $TARGET_FLAGS \
+            -workspace Clip.xcworkspace \
+            -scheme Clip \
             -configuration Release \
             -archivePath build/Clip.xcarchive \
+            -destination 'generic/platform=iOS' \
             CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            PROVISIONING_PROFILE_SPECIFIER=""
 
-      - name: Package Into Sideloadable IPA
+      - name: Package Into Clean Sideloadable IPA
         run: |
           mkdir -p Payload
           cp -r build/Clip.xcarchive/Products/Applications/Clip.app Payload/
-          zip -r Clip_Unsigned.ipa Payload
+          zip -r Clip_Clean.ipa Payload
 
       - name: Upload Compiled File
         uses: actions/upload-artifact@v4
         with:
-          name: Clip-Unsigned-IPA
-          path: Clip_Unsigned.ipa
+          name: Clip-Clean-IPA
+          path: Clip_Clean.ipa
