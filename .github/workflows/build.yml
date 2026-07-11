@@ -11,14 +11,25 @@ jobs:
         with:
           submodules: 'recursive'
 
-      - name: Build Core Target Only
+      - name: Find and Build Core Target Only
         run: |
           mkdir -p build
           
-          # Compiles ONLY the primary executable block, ignoring extensions
+          # Detect correct project format and casing automatically
+          if [ -d "Clip.xcworkspace" ]; then
+            TARGET_FLAGS="-workspace Clip.xcworkspace -scheme Clip"
+          elif [ -d "clip.xcworkspace" ]; then
+            TARGET_FLAGS="-workspace clip.xcworkspace -scheme Clip"
+          elif [ -d "Clip.xcodeproj" ]; then
+            TARGET_FLAGS="-project Clip.xcodeproj -scheme Clip"
+          else
+            TARGET_FLAGS="-project clip.xcodeproj -scheme Clip"
+          fi
+          
+          echo "Building using flags: $TARGET_FLAGS"
+          
           xcodebuild archive \
-            -workspace Clip.xcworkspace \
-            -scheme Clip \
+            $TARGET_FLAGS \
             -configuration Release \
             -archivePath build/Clip.xcarchive \
             -destination 'generic/platform=iOS' \
